@@ -26,3 +26,15 @@ Footer: FAQs, rules PDF link, code of conduct, contact form; sticky “Buy Ticke
 Performance: lazy-loaded images, prefers-reduced-motion support; clean, modern, fully responsive.
 ```
 
+## 使い方（ローカルプレビュー）
+
+- 直接開く: macOS は `open index.html`、Windows は `start index.html`。
+- 簡易サーバーで開く（推奨）:
+  - `python3 -m http.server` を実行し、ブラウザで `http://localhost:8000/index.html` を開く。
+
+## 備考
+
+- アニメーション: OSの「動きを減らす」設定に対応（軽減）。
+- 画像: `loading="lazy"` で遅延読み込みに対応。
+- カレンダー: スケジュールの「Add to calendar」はICSファイルを生成・ダウンロードします。
+- ルールPDF: 簡易プレースホルダのPDFをダウンロードします。
