@@ -10,17 +10,17 @@
       --bg:#070210; --panel:#0e0720; --panel2:#140a2c; --text:#e8e6ff; --muted:#bcb7ff;
       --accent:#28f0ff; --accent2:#ff2bd6; --shadow:0 8px 30px rgba(0,0,0,.45); --radius:14px;
     }
-    html,body{height:100%}
+    html,body{min-height:100%}
     body{
       margin:0; color:var(--text);
       background: radial-gradient(1200px 800px at 20% -20%, rgba(255,43,214,.15), transparent 60%),
                   radial-gradient(1000px 600px at 90% 0%, rgba(40,240,255,.12), transparent 60%), var(--bg);
       font:400 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-      display:grid; place-items:center; padding:24px;
+      padding:24px;
     }
     .poster{
-      width:min(100%, 1280px); aspect-ratio:16/9; position:relative; overflow:hidden;
+      width:min(100%, 1280px); margin:0 auto; position:relative;
       border-radius:18px; box-shadow:var(--shadow);
       background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 40%), var(--panel);
       border:1px solid rgba(255,255,255,.06);
@@ -29,7 +29,7 @@
       background: repeating-linear-gradient(to bottom, rgba(255,255,255,.06) 0, rgba(255,255,255,.06) 1px, transparent 2px);
       mix-blend-mode:overlay;
     }
-    .inner{position:absolute; inset:0; padding:28px 32px; display:grid; grid-template-rows:auto auto 1fr auto; gap:16px}
+    .inner{position:relative; padding:28px 32px; display:grid; gap:16px}
     .meta{color:var(--muted); font-size:13px}
 
     .title{font-size:clamp(28px,4.6vw,48px); line-height:1.1; text-shadow:0 0 24px rgba(40,240,255,.35), 0 0 30px rgba(255,43,214,.25)}
@@ -56,7 +56,7 @@
   </style>
 </head>
 <body>
-  <div class="poster" role="img" aria-label="Introducing GPT‑5 for developers — summary poster">
+  <div class="poster" role="img" aria-label="開発者向け GPT‑5 の紹介 — 要約ポスター">
     <div class="scan" aria-hidden="true"></div>
     <div class="inner">
       <div>
