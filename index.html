@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Esports Tournament — Neon Landing</title>
+  <meta name="description" content="Neon, high-contrast esports tournament landing page. Schedule, bracket, teams, and more." />
+  <style>
+    :root {
+      --bg: #070210;
+      --panel: #0e0720;
+      --panel-2: #140a2c;
+      --text: #e8e6ff;
+      --muted: #bcb7ff;
+      --accent: #28f0ff;
+      --accent-2: #ff2bd6;
+      --good: #37f59f;
+      --bad: #ff5d7a;
+      --warn: #ffd166;
+      --scanline: rgba(255,255,255,0.05);
+      --shadow: 0 8px 30px rgba(0,0,0,0.45);
+      --radius: 14px;
+    }
+
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 20% -20%, rgba(255,43,214,0.15), transparent 60%),
+                  radial-gradient(1000px 600px at 90% 0%, rgba(40,240,255,0.12), transparent 60%),
+                  var(--bg);
+      font: 400 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .grid { display: grid; gap: 16px; }
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 40%), var(--panel);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel h2 { margin: 0; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); background: linear-gradient(180deg, rgba(40,240,255,0.05), transparent 80%); }
+    .panel .body { padding: 16px 20px; }
+
+    /* Hero */
+    #hero { position: relative; height: 60vh; min-height: 440px; isolation: isolate; }
+    #hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .scanlines { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient( to bottom, rgba(255,255,255,0.06) 0, rgba(255,255,255,0.06) 1px, transparent 2px ); mix-blend-mode: overlay; opacity: .2; }
+    .hero-inner { position: relative; z-index: 2; height: 100%; display: grid; place-items: center; text-align: center; padding: 0 16px; }
+    .title { font-size: clamp(28px, 5vw, 56px); line-height: 1.1; letter-spacing: .5px; text-shadow: 0 0 24px rgba(40,240,255,0.35), 0 0 30px rgba(255,43,214,0.25); }
+    .subtitle { color: var(--muted); margin-top: 8px; font-size: clamp(14px, 2.5vw, 18px); }
+    .cta { display: inline-flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+    .btn { border: 1px solid rgba(255,255,255,0.12); background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)); color: var(--text); padding: 10px 16px; border-radius: 10px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; box-shadow: 0 0 0 0 rgba(40,240,255,0.4); }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(40,240,255,0.15); }
+    .btn.accent { background: linear-gradient(90deg, rgba(40,240,255,0.25), rgba(255,43,214,0.25)); border-color: rgba(255,255,255,0.18); }
+
+    /* Sections layout */
+    section { margin: 28px 0; }
+    header.sticky { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(10px); background: linear-gradient(180deg, rgba(7,2,16,0.85), rgba(7,2,16,0.6)); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    header .container { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .5px; }
+    .logo { width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #fff, #28f0ff, #1a0c3d 60%); box-shadow: 0 0 24px rgba(40,240,255,0.5), inset 0 0 18px rgba(255,43,214,0.6); }
+
+    /* Bracket */
+    .bracket-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    .seg { display: inline-flex; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; overflow: hidden; }
+    .seg button { background: transparent; border: 0; color: var(--muted); padding: 8px 14px; cursor: pointer; }
+    .seg button.active { color: var(--text); background: rgba(40,240,255,0.12); }
+    .bracket { display: grid; grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+    .match { background: var(--panel-2); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px; transition: transform .12s ease, border-color .12s ease; }
+    .match:hover { transform: translateY(-2px); border-color: rgba(40,240,255,0.35); }
+    .team { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 8px; }
+    .team .logo { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, #28f0ff, #ff2bd6); box-shadow: inset 0 0 12px rgba(0,0,0,0.5); }
+    .team.win { background: rgba(55,245,159,0.08); }
+    .team.lose { background: rgba(255,93,122,0.06); }
+    .time { color: var(--muted); font-size: 12px; margin-top: 6px; }
+
+    /* Schedule */
+    .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: center; }
+    .filters select { background: var(--panel-2); color: var(--text); border: 1px solid rgba(255,255,255,0.12); padding: 8px 10px; border-radius: 8px; }
+    .schedule-list { display: grid; gap: 10px; }
+    .event { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; background: var(--panel-2); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px; }
+    .event .meta { color: var(--muted); font-size: 13px; }
+
+    /* Teams */
+    .teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .team-card { background: var(--panel); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+    .team-head { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; }
+    .team-logo { width: 44px; height: 44px; border-radius: 10px; background: conic-gradient(from 0deg, #28f0ff, #ff2bd6, #28f0ff); filter: saturate(1.2); }
+    .form { display: inline-flex; gap: 4px; }
+    .form span { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .form .w { background: var(--good); }
+    .form .l { background: var(--bad); opacity: .8; }
+    .roster { color: var(--muted); font-size: 14px; }
+    .compare { display: flex; align-items: center; gap: 8px; }
+    .compare input { accent-color: #28f0ff; }
+
+    .compare-bar { position: sticky; bottom: 16px; display: none; gap: 10px; justify-content: space-between; align-items: center; background: linear-gradient(180deg, rgba(40,240,255,0.1), rgba(255,43,214,0.1)); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 10px 14px; box-shadow: var(--shadow); }
+    .compare-bar.show { display: flex; }
+
+    /* Stream */
+    .stream { display: grid; grid-template-columns: 1fr 300px; gap: 12px; }
+    .player { aspect-ratio: 16/9; background: radial-gradient(circle at 50% 50%, rgba(40,240,255,0.15), rgba(255,43,214,0.15) 60%, transparent 70%), #000; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; display: grid; place-items: center; color: var(--muted); position: relative; overflow: hidden; }
+    .ticker { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); font-size: 14px; padding: 6px 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .sponsors { display: grid; gap: 10px; }
+    .sponsor-strip { display: grid; grid-auto-flow: column; gap: 10px; overflow: hidden; mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+    .sponsor { height: 54px; width: 100%; min-width: 140px; background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: grid; place-items: center; color: var(--muted); }
+
+    /* Venue */
+    .venue-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 12px; }
+    .map { aspect-ratio: 3/2; background: linear-gradient(180deg, rgba(40,240,255,0.08), rgba(255,43,214,0.08)), #0b061a; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; display: grid; place-items: center; color: var(--muted); position: relative; overflow: hidden; }
+    .map::after { content: "MAP"; position: absolute; font-weight: 700; font-size: 42px; letter-spacing: 6px; color: rgba(255,255,255,0.06); }
+    .notes { color: var(--muted); font-size: 14px; }
+
+    /* Social */
+    .social-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+    .testimonials { display: grid; gap: 10px; }
+    .highlight-carousel { display: grid; grid-auto-flow: column; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; }
+    .highlight-carousel img { width: 100%; max-width: 320px; height: 180px; object-fit: cover; border-radius: 10px; scroll-snap-align: start; border: 1px solid rgba(255,255,255,0.08); }
+
+    /* Footer */
+    footer .grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .mobile-sticky { display: none; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 50; }
+    .mobile-sticky .btn { width: 100%; background: linear-gradient(90deg, #28f0ff, #ff2bd6); color: #0b061a; font-weight: 700; border: 0; }
+
+    @media (max-width: 980px) {
+      .stream { grid-template-columns: 1fr; }
+      .venue-grid { grid-template-columns: 1fr; }
+      .social-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .mobile-sticky { display: block; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .scanlines { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="sticky">
+    <div class="container">
+      <div class="brand"><span class="logo" aria-hidden="true"></span> NEON LEAGUE 2025</div>
+      <nav>
+        <a href="#bracket">Bracket</a>
+        <span aria-hidden="true"> · </span>
+        <a href="#schedule">Schedule</a>
+        <span aria-hidden="true"> · </span>
+        <a href="#teams">Teams</a>
+        <span aria-hidden="true"> · </span>
+        <a href="#stream">Watch</a>
+      </nav>
+    </div>
+  </header>
+
+  <section id="hero" aria-label="Hero">
+    <canvas id="heroCanvas" aria-hidden="true"></canvas>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="hero-inner container">
+      <div>
+        <h1 class="title">Neon League Esports Championship</h1>
+        <div class="subtitle">2025-11-14 – 2025-11-17 • Tokyo, JP</div>
+        <div class="cta" role="group" aria-label="Primary actions">
+          <a class="btn accent" href="#contact">Register Team</a>
+          <a class="btn" href="#tickets">Get Tickets</a>
+          <a class="btn" href="#stream">Watch Live</a>
+        </div>
+      </div>
+    </div>
+    <div class="mobile-sticky"><a class="btn" href="#tickets">Buy Tickets</a></div>
+  </section>
+
+  <main class="container">
+    <section id="bracket" class="panel" aria-labelledby="bracket-title">
+      <h2 id="bracket-title">Interactive Bracket</h2>
+      <div class="body">
+        <div class="bracket-controls">
+          <div class="seg" role="tablist" aria-label="Bracket size">
+            <button id="b8" class="active" role="tab" aria-selected="true" aria-controls="bracketGrid">8 Teams</button>
+            <button id="b16" role="tab" aria-selected="false" aria-controls="bracketGrid">16 Teams</button>
+          </div>
+          <button id="demoBtn" class="btn" aria-pressed="false">Demo Auto-Advance</button>
+        </div>
+        <div id="bracketGrid" class="bracket" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="schedule" class="panel" aria-labelledby="schedule-title">
+      <h2 id="schedule-title">Schedule</h2>
+      <div class="body">
+        <div class="filters">
+          <label>Stage
+            <select id="stageFilter" aria-label="Stage filter">
+              <option value="all">All</option>
+              <option value="groups">Groups</option>
+              <option value="semis">Semifinals</option>
+              <option value="final">Final</option>
+            </select>
+          </label>
+          <label>Day
+            <select id="dayFilter" aria-label="Day filter">
+              <option value="all">All</option>
+              <option value="day1">Day 1</option>
+              <option value="day2">Day 2</option>
+              <option value="day3">Day 3</option>
+            </select>
+          </label>
+          <button class="btn" id="icsAll">Add all to calendar (ICS)</button>
+        </div>
+        <div id="scheduleList" class="schedule-list" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="teams" class="panel" aria-labelledby="teams-title">
+      <h2 id="teams-title">Teams</h2>
+      <div class="body">
+        <div id="compareBar" class="compare-bar" aria-live="polite">
+          <div>Compare: <span id="cmpA">—</span> vs <span id="cmpB">—</span></div>
+          <button class="btn" id="clearCompare">Clear</button>
+        </div>
+        <div class="teams" id="teamGrid"></div>
+      </div>
+    </section>
+
+    <section id="stream" class="panel" aria-labelledby="stream-title">
+      <h2 id="stream-title">Stream Preview</h2>
+      <div class="body">
+        <div class="stream">
+          <div class="player" role="img" aria-label="Stream placeholder">
+            <div>Live Player Placeholder</div>
+            <div id="ticker" class="ticker" aria-live="polite">Now: Opening Ceremony • Next: Group A Match 1</div>
+          </div>
+          <div class="sponsors">
+            <div class="sponsor-strip" id="sponsorStrip" aria-label="Sponsor logos">
+              <div class="sponsor">ACME</div>
+              <div class="sponsor">BYTE</div>
+              <div class="sponsor">NEO</div>
+              <div class="sponsor">VORTEX</div>
+              <div class="sponsor">PULSE</div>
+              <div class="sponsor">KITE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="venue" class="panel" aria-labelledby="venue-title">
+      <h2 id="venue-title">Venue & Travel</h2>
+      <div class="body">
+        <div class="venue-grid">
+          <div class="map" role="img" aria-label="Venue map placeholder"></div>
+          <div class="travel">
+            <h3 style="margin-top:0">Getting there</h3>
+            <ul>
+              <li><a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Tokyo+Big+Site">Directions</a></li>
+              <li><a target="_blank" rel="noopener" href="#">Nearby hotels list</a></li>
+            </ul>
+            <div class="notes">
+              <strong>Accessibility:</strong> Wheelchair access, priority seating, quiet room available.<br/>
+              <strong>Safety:</strong> Bag checks at entry, zero tolerance policy for harassment.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="social" class="panel" aria-labelledby="social-title">
+      <h2 id="social-title">Social Proof</h2>
+      <div class="body">
+        <div class="social-grid">
+          <div>
+            <div class="testimonials">
+              <blockquote class="panel" style="margin:0; padding:0">
+                <div class="body">“Electric atmosphere and top-tier production!” — @arena_insider</div>
+              </blockquote>
+              <blockquote class="panel" style="margin:0; padding:0">
+                <div class="body">“The best esports weekend of the year.” — @ggreports</div>
+              </blockquote>
+            </div>
+            <p class="muted">Followers: Twitch 1.2M • YouTube 980k • X 640k</p>
+          </div>
+          <div>
+            <div class="highlight-carousel" aria-label="Recent highlights">
+              <img loading="lazy" alt="Highlight 1" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360'%3E%3Crect width='100%25' height='100%25' fill='%23140a2c'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23bcb7ff' font-family='system-ui' font-size='22'%3EHighlight 1%3C/text%3E%3C/svg%3E" />
+              <img loading="lazy" alt="Highlight 2" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360'%3E%3Crect width='100%25' height='100%25' fill='%23140a2c'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23bcb7ff' font-family='system-ui' font-size='22'%3EHighlight 2%3C/text%3E%3C/svg%3E" />
+              <img loading="lazy" alt="Highlight 3" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='360'%3E%3Crect width='100%25' height='100%25' fill='%23140a2c'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23bcb7ff' font-family='system-ui' font-size='22'%3EHighlight 3%3C/text%3E%3C/svg%3E" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="panel" id="tickets">
+      <h2 style="margin:0; padding:16px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);">More</h2>
+      <div class="body">
+        <div class="grid">
+          <div>
+            <h3>FAQs</h3>
+            <details><summary>What can I bring?</summary><div style="padding:8px 0;color:var(--muted)">Small bags only; no outside food or drinks.</div></details>
+            <details><summary>Are tickets refundable?</summary><div style="padding:8px 0;color:var(--muted)">Tickets are non-refundable but transferable.</div></details>
+          </div>
+          <div>
+            <h3>Policies</h3>
+            <ul>
+              <li><a href="#" id="rulesLink">Rules (PDF)</a></li>
+              <li><a href="#">Code of Conduct</a></li>
+            </ul>
+          </div>
+          <div id="contact">
+            <h3>Contact</h3>
+            <form id="contactForm" novalidate>
+              <div class="grid" style="grid-template-columns: 1fr 1fr; gap:10px;">
+                <input aria-label="Your name" required name="name" placeholder="Your name" style="padding:10px;border-radius:8px;background:var(--panel-2);border:1px solid rgba(255,255,255,0.12);color:var(--text)" />
+                <input aria-label="Email" required type="email" name="email" placeholder="Email" style="padding:10px;border-radius:8px;background:var(--panel-2);border:1px solid rgba(255,255,255,0.12);color:var(--text)" />
+              </div>
+              <textarea aria-label="Message" required name="message" placeholder="Message" rows="4" style="margin-top:10px;padding:10px;border-radius:8px;background:var(--panel-2);border:1px solid rgba(255,255,255,0.12);color:var(--text);width:100%"></textarea>
+              <button class="btn accent" type="submit" style="margin-top:10px">Send</button>
+              <div id="contactStatus" class="meta" aria-live="polite" style="margin-top:8px;color:var(--muted)"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    // Prefers-reduced-motion detection
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // HERO CANVAS BACKDROP
+    (function heroBackdrop(){
+      const canvas = document.getElementById('heroCanvas');
+      const ctx = canvas.getContext('2d');
+      let w, h, t = 0;
+      function resize(){
+        w = canvas.width = canvas.clientWidth * devicePixelRatio;
+        h = canvas.height = canvas.clientHeight * devicePixelRatio;
+      }
+      window.addEventListener('resize', resize, { passive: true });
+      resize();
+
+      const lines = Array.from({length: 60}, (_,i)=>({
+        x: Math.random(), y: Math.random(), spd: 0.2 + Math.random()*0.8, hue: 180 + Math.random()*120
+      }));
+
+      function draw(){
+        ctx.clearRect(0,0,w,h);
+        // subtle gradient
+        const g = ctx.createLinearGradient(0,0,w,h);
+        g.addColorStop(0, 'rgba(40,240,255,0.06)');
+        g.addColorStop(1, 'rgba(255,43,214,0.06)');
+        ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+        // flowing lines
+        for(const L of lines){
+          const px = (L.x + Math.sin((t*L.spd + L.y)*3)*0.05) * w;
+          const py = ((L.y + t*L.spd*0.0002) % 1) * h;
+          ctx.beginPath();
+          ctx.strokeStyle = `hsla(${L.hue}, 90%, 60%, 0.7)`;
+          ctx.lineWidth = 2 * devicePixelRatio;
+          ctx.moveTo(px-40, py);
+          ctx.lineTo(px+40, py+6);
+          ctx.stroke();
+        }
+        // vignette
+        const r = Math.max(w,h);
+        const vg = ctx.createRadialGradient(w*0.5,h*0.5, r*0.1, w*0.5,h*0.5, r*0.8);
+        vg.addColorStop(0, 'rgba(0,0,0,0)');
+        vg.addColorStop(1, 'rgba(0,0,0,0.35)');
+        ctx.fillStyle = vg; ctx.fillRect(0,0,w,h);
+        t+= 16;
+        if(!reduceMotion) requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+
+    // BRACKET
+    const bracketGrid = document.getElementById('bracketGrid');
+    const btn8 = document.getElementById('b8');
+    const btn16 = document.getElementById('b16');
+    const demoBtn = document.getElementById('demoBtn');
+    let bracketSize = 8;
+    let demoTimer = null;
+
+    function sampleTeams(n){
+      const base = ['Apex 🇯🇵','Blaze 🇺🇸','Cipher 🇬🇧','Drift 🇰🇷','Echo 🇫🇷','Flux 🇧🇷','Glide 🇪🇸','Helix 🇨🇦','Ion 🇩🇪','Jade 🇮🇳','Kite 🇮🇹','Lumen 🇸🇪','Muse 🇵🇱','Nova 🇲🇽','Orbit 🇦🇺','Pulse 🇳🇿'];
+      return base.slice(0,n);
+    }
+
+    function renderBracket(){
+      bracketGrid.innerHTML = '';
+      const teams = sampleTeams(bracketSize);
+      const rounds = Math.log2(bracketSize);
+      // Build columns by rounds
+      for(let r=0;r<rounds;r++){
+        const col = document.createElement('div');
+        col.className = 'grid';
+        const matches = bracketSize / Math.pow(2, r+1);
+        for(let m=0;m<matches;m++){
+          const card = document.createElement('div');
+          card.className = 'match';
+          const t1 = teams[m*2 + (r===0?0:0)] || `T${m*2+1}`;
+          const t2 = teams[m*2 + 1 + (r===0?0:0)] || `T${m*2+2}`;
+          const time = new Date(Date.UTC(2025,10,14 + r, 10 + m*2, 0)).toISOString();
+          card.innerHTML = `
+            <div class="team"><div class="logo"></div><div>${t1}</div><div>0</div></div>
+            <div class="team"><div class="logo"></div><div>${t2}</div><div>0</div></div>
+            <div class="time" data-utc="${time}">UTC ${time.substring(11,16)}</div>
+          `;
+          col.appendChild(card);
+        }
+        bracketGrid.appendChild(col);
+      }
+      localizeTimes();
+    }
+
+    function toggleBracket(size){
+      bracketSize = size; renderBracket();
+      btn8.classList.toggle('active', size===8);
+      btn8.setAttribute('aria-selected', String(size===8));
+      btn16.classList.toggle('active', size===16);
+      btn16.setAttribute('aria-selected', String(size===16));
+    }
+
+    btn8.addEventListener('click', ()=>toggleBracket(8));
+    btn16.addEventListener('click', ()=>toggleBracket(16));
+
+    function startDemo(){
+      if(demoTimer){ clearInterval(demoTimer); demoTimer = null; demoBtn.setAttribute('aria-pressed','false'); demoBtn.textContent = 'Demo Auto-Advance'; return; }
+      demoBtn.setAttribute('aria-pressed','true'); demoBtn.textContent = 'Stop Demo';
+      const allMatches = () => Array.from(document.querySelectorAll('.match'));
+      let i = 0;
+      demoTimer = setInterval(()=>{
+        const ms = allMatches(); if(ms.length===0) return;
+        const m = ms[i % ms.length];
+        const teams = m.querySelectorAll('.team');
+        teams.forEach(t=>t.classList.remove('win','lose'));
+        const win = Math.random() > 0.5 ? 0 : 1;
+        teams[win].classList.add('win'); teams[1-win].classList.add('lose');
+        i++;
+      }, reduceMotion ? 1500 : 900);
+    }
+    demoBtn.addEventListener('click', startDemo);
+
+    // SCHEDULE
+    const schedule = [
+      { id: 'g1', stage: 'groups', day:'day1', a:'Apex', b:'Blaze', utc:'2025-11-14T10:00:00Z' },
+      { id: 'g2', stage: 'groups', day:'day1', a:'Cipher', b:'Drift', utc:'2025-11-14T12:00:00Z' },
+      { id: 'g3', stage: 'groups', day:'day2', a:'Echo', b:'Flux', utc:'2025-11-15T10:00:00Z' },
+      { id: 's1', stage: 'semis', day:'day2', a:'Semifinal 1', b:'TBD', utc:'2025-11-15T14:00:00Z' },
+      { id: 's2', stage: 'semis', day:'day3', a:'Semifinal 2', b:'TBD', utc:'2025-11-16T10:00:00Z' },
+      { id: 'f',  stage: 'final',  day:'day3', a:'Grand Final', b:'TBD', utc:'2025-11-16T14:00:00Z' },
+    ];
+    const stageFilter = document.getElementById('stageFilter');
+    const dayFilter = document.getElementById('dayFilter');
+    const scheduleList = document.getElementById('scheduleList');
+    const icsAll = document.getElementById('icsAll');
+
+    function localize(d){
+      const dt = new Date(d);
+      return dt.toLocaleString([], { hour12:false, month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    }
+    function localizeTimes(){
+      document.querySelectorAll('.time[data-utc]').forEach(el=>{
+        const d = new Date(el.getAttribute('data-utc'));
+        el.textContent = localize(d);
+      });
+    }
+
+    function renderSchedule(){
+      scheduleList.innerHTML = '';
+      const st = stageFilter.value, dy = dayFilter.value;
+      for(const e of schedule){
+        if((st!=='all' && e.stage!==st) || (dy!=='all' && e.day!==dy)) continue;
+        const row = document.createElement('div');
+        row.className = 'event';
+        row.innerHTML = `
+          <div>
+            <div><strong>${e.a}</strong> vs <strong>${e.b}</strong></div>
+            <div class="meta">${e.stage.toUpperCase()} • <span data-utc="${e.utc}"></span></div>
+          </div>
+          <div>
+            <button class="btn" data-ics="${e.id}">Add to calendar</button>
+          </div>
+        `;
+        scheduleList.appendChild(row);
+      }
+      localizeTimes();
+    }
+
+    function icsForEvent(ev){
+      const dt = new Date(ev.utc);
+      const start = dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+      const end = new Date(dt.getTime()+90*60000).toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+      return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Neon League//EN\nBEGIN:VEVENT\nUID:${ev.id}@neonleague\nDTSTAMP:${start}\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:${ev.a} vs ${ev.b}\nDESCRIPTION:${ev.stage.toUpperCase()} match\nEND:VEVENT\nEND:VCALENDAR`;
+    }
+    function downloadICS(name, content){
+      const blob = new Blob([content], {type:'text/calendar'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = name + '.ics'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    }
+
+    scheduleList.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-ics]'); if(!btn) return;
+      const ev = schedule.find(s=>s.id===btn.getAttribute('data-ics')); if(!ev) return;
+      downloadICS(ev.id, icsForEvent(ev));
+    });
+    icsAll.addEventListener('click', ()=>{
+      const all = schedule.map(icsForEvent).join('\n');
+      downloadICS('neon-league-full', all);
+    });
+    stageFilter.addEventListener('change', renderSchedule);
+    dayFilter.addEventListener('change', renderSchedule);
+
+    // TEAMS
+    const teamData = sampleTeams(12).map((name, i)=>({
+      id: 't'+i, name, country: name.split(' ').pop(), form: Array.from({length:5}, ()=> Math.random()>0.4 ? 'W':'L'),
+      roster: [
+        {n:'Alex', r:'DPS'}, {n:'Bea', r:'Support'}, {n:'Chen', r:'Flex'}, {n:'Diego', r:'Tank'}, {n:'Emi', r:'IGL'}
+      ]
+    }));
+    const teamGrid = document.getElementById('teamGrid');
+
+    let cmp = [];
+    function renderTeams(){
+      teamGrid.innerHTML = '';
+      for(const t of teamData){
+        const card = document.createElement('div'); card.className='team-card';
+        const w = t.form.filter(x=>x==='W').length; const l = t.form.length-w;
+        card.innerHTML = `
+          <div class="team-head">
+            <div class="team-logo" aria-hidden="true"></div>
+            <div>
+              <div style="font-weight:700">${t.name}</div>
+              <div class="form" aria-label="Recent form">${t.form.map(x=>`<span class="${x.toLowerCase()}"></span>`).join('')}</div>
+            </div>
+            <div style="color:var(--muted)">${w}-${l}</div>
+          </div>
+          <div class="roster">${t.roster.map(p=>`${p.n} <small>(${p.r})</small>`).join(' • ')}</div>
+          <div class="compare"><label><input type="checkbox" data-team="${t.id}" /> Quick compare</label></div>
+        `;
+        teamGrid.appendChild(card);
+      }
+    }
+
+    teamGrid.addEventListener('change', (e)=>{
+      const id = e.target.getAttribute('data-team'); if(!id) return;
+      if(e.target.checked){ if(!cmp.includes(id)) cmp.push(id); } else { cmp = cmp.filter(x=>x!==id); }
+      cmp = cmp.slice(-2); // keep last two
+      document.querySelectorAll('input[data-team]').forEach(inp=>{ inp.checked = cmp.includes(inp.getAttribute('data-team')); });
+      const bar = document.getElementById('compareBar');
+      if(cmp.length===2){
+        bar.classList.add('show');
+        const A = teamData.find(t=>t.id===cmp[0]);
+        const B = teamData.find(t=>t.id===cmp[1]);
+        document.getElementById('cmpA').textContent = A?.name || '—';
+        document.getElementById('cmpB').textContent = B?.name || '—';
+      } else { bar.classList.remove('show'); }
+    });
+    document.getElementById('clearCompare').addEventListener('click', ()=>{
+      cmp = []; document.querySelectorAll('input[data-team]').forEach(i=>i.checked=false); document.getElementById('compareBar').classList.remove('show');
+    });
+
+    // STREAM ticker loop
+    (function ticker(){
+      const el = document.getElementById('ticker');
+      const items = [
+        'Now: Opening Ceremony • Next: Group A Match 1',
+        'Now: Group A Match 1 • Next: Group B Match 1',
+        'Now: Semifinal 1 • Next: Semifinal 2',
+        'Now: Grand Final • Next: Trophy Ceremony'
+      ];
+      let i = 0;
+      setInterval(()=>{ i=(i+1)%items.length; el.textContent = items[i]; }, reduceMotion ? 5000 : 2500);
+    })();
+
+    // Sponsors auto-scroll (marquee-like without CSS animations)
+    (function sponsors(){
+      if(reduceMotion) return;
+      const strip = document.getElementById('sponsorStrip');
+      let x = 0;
+      function step(){ x += 0.5; strip.scrollLeft = x; if(x >= strip.scrollWidth) x = 0; requestAnimationFrame(step); }
+      requestAnimationFrame(step);
+    })();
+
+    // Rules PDF (on-demand generated minimal PDF)
+    document.getElementById('rulesLink').addEventListener('click', (e)=>{
+      e.preventDefault();
+      // Very minimal PDF bytes (simple text) for placeholder
+      const text = 'Neon League Rules\n\n1. Be respectful.\n2. Follow the code of conduct.\n3. Admin decisions are final.';
+      const blob = new Blob([text], {type: 'application/pdf'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'neon-league-rules.pdf'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    });
+
+    // Contact form (client-side only)
+    document.getElementById('contactForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const name = (fd.get('name')||'').toString().trim();
+      const email = (fd.get('email')||'').toString().trim();
+      const msg = (fd.get('message')||'').toString().trim();
+      const out = document.getElementById('contactStatus');
+      if(!name || !email || !msg) { out.textContent = 'Please fill out all fields.'; return; }
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ out.textContent='Please enter a valid email.'; return; }
+      out.textContent = 'Thanks! We\'ll get back to you soon.';
+      e.target.reset();
+    });
+
+    // INITIAL RENDER
+    renderBracket();
+    renderSchedule();
+    renderTeams();
+  </script>
+</body>
+</html>
+
