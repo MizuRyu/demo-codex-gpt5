@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Introducing GPT‑5 for developers — Poster</title>
+  <meta name="description" content="Neon, high-contrast poster summarizing GPT‑5 for developers." />
+  <style>
+    :root{
+      --bg:#070210; --panel:#0e0720; --panel2:#140a2c; --text:#e8e6ff; --muted:#bcb7ff;
+      --accent:#28f0ff; --accent2:#ff2bd6; --shadow:0 8px 30px rgba(0,0,0,.45); --radius:14px;
+    }
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--text);
+      background: radial-gradient(1200px 800px at 20% -20%, rgba(255,43,214,.15), transparent 60%),
+                  radial-gradient(1000px 600px at 90% 0%, rgba(40,240,255,.12), transparent 60%), var(--bg);
+      font:400 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+      display:grid; place-items:center; padding:24px;
+    }
+    .poster{
+      width:min(100%, 1280px); aspect-ratio:16/9; position:relative; overflow:hidden;
+      border-radius:18px; box-shadow:var(--shadow);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 40%), var(--panel);
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .scan{position:absolute; inset:0; pointer-events:none; opacity:.2;
+      background: repeating-linear-gradient(to bottom, rgba(255,255,255,.06) 0, rgba(255,255,255,.06) 1px, transparent 2px);
+      mix-blend-mode:overlay;
+    }
+    .inner{position:absolute; inset:0; padding:28px 32px; display:grid; grid-template-rows:auto auto 1fr auto; gap:16px}
+    .brand{display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-radius:10px;
+      background:linear-gradient(180deg, rgba(40,240,255,.05), transparent 80%);
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .brand .left{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.5px}
+    .logo{width:26px;height:26px;border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, #fff, #28f0ff, #1a0c3d 60%);
+      box-shadow:0 0 24px rgba(40,240,255,.5), inset 0 0 18px rgba(255,43,214,.6);
+    }
+    .meta{color:var(--muted); font-size:13px}
+
+    .title{font-size:clamp(28px,4.6vw,48px); line-height:1.1; text-shadow:0 0 24px rgba(40,240,255,.35), 0 0 30px rgba(255,43,214,.25)}
+    .subtitle{color:var(--muted); font-size:clamp(14px,2.2vw,18px)}
+
+    .tldr{background:var(--panel2); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px; box-shadow:var(--shadow)}
+    .tldr h3{margin:0 0 6px 0; font-size:18px}
+    .tldr p{margin:0; color:var(--muted)}
+
+    .grid{display:grid; grid-template-columns: 1.4fr .8fr; gap:14px}
+    .panel{background:var(--panel2); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px}
+    .panel h3{margin:0 0 8px 0; font-size:18px}
+    ul{margin:0; padding-left:18px}
+    li{margin:6px 0}
+
+    .quote{font-size:18px; color:var(--text); border-left:3px solid var(--accent); padding-left:10px}
+    .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px}
+    .chip{font-size:12px; color:var(--muted); padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.06)}
+
+    .footer{display:flex; align-items:center; justify-content:space-between; color:var(--muted); font-size:12px}
+    .footer a{color:var(--accent); text-decoration:none}
+    .footer a:hover{text-decoration:underline}
+
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+    @media (prefers-reduced-motion: reduce){ .scan{display:none} }
+  </style>
+</head>
+<body>
+  <div class="poster" role="img" aria-label="Introducing GPT‑5 for developers — summary poster">
+    <div class="scan" aria-hidden="true"></div>
+    <div class="inner">
+      <div class="brand">
+        <div class="left"><span class="logo" aria-hidden="true"></span> NEON LEAGUE STYLE</div>
+        <div class="meta">Aug 7, 2025 • OpenAI</div>
+      </div>
+
+      <div>
+        <div class="title">Introducing GPT‑5 for developers</div>
+        <div class="subtitle">The best model for coding and agentic tasks.</div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <h3>Key Points</h3>
+          <ul>
+            <li>State-of-the-art coding: 74.9% on SWE‑bench Verified, 88% on Aider polyglot; strong frontend performance.</li>
+            <li>Agentic strength: 96.7% on τ2‑bench (telecom); more reliable tool calling and chaining.</li>
+            <li>New API controls: verbosity (low/medium/high), minimal reasoning_effort, and custom tools with plaintext/CFG.</li>
+            <li>Models and pricing: gpt‑5 / mini / nano; gpt‑5 at $1.25/1M in, $10/1M out (others cheaper).</li>
+            <li>Long context: up to 400k total tokens (272k input, 128k reasoning+output); improved retrieval accuracy.</li>
+          </ul>
+          <div class="chips">
+            <span class="chip">Coding SOTA</span>
+            <span class="chip">Agentic tools</span>
+            <span class="chip">Verbosity</span>
+            <span class="chip">Reasoning effort</span>
+            <span class="chip">Custom tools</span>
+            <span class="chip">400k context</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>TL;DR</h3>
+          <div class="tldr">
+            <p>OpenAI released GPT‑5 on the API platform, delivering SOTA performance for coding and agentic tasks with stronger tool use and long‑context retrieval.</p>
+            <p>Developers gain finer control via a new verbosity parameter, a minimal reasoning mode, and plaintext custom tools. GPT‑5 ships in three sizes to balance performance, cost, and latency.</p>
+          </div>
+          <h3 style="margin-top:10px">Pull Quote</h3>
+          <div class="quote">“GPT‑5 is the strongest coding model we’ve ever released.”</div>
+          <div class="meta" style="margin-top:8px">Source: OpenAI announcement</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div>Source: <a href="https://openai.com/ja-JP/index/gpt-oss-model-card/" target="_blank" rel="noopener">openai.com — Introducing GPT‑5 for developers</a></div>
+        <div>Design: neon high‑contrast • Aspect 16:9</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
