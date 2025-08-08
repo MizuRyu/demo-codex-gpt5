@@ -143,6 +143,13 @@
     @media (prefers-reduced-motion: reduce) {
       .scanlines { display: none; }
     }
+
+    /* Summarizer */
+    .summ-controls { display: grid; gap: 10px; grid-template-columns: 1fr; }
+    .summ-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    #articleInput { width: 100%; min-height: 160px; padding: 12px; border-radius: 10px; color: var(--text); background: var(--panel-2); border: 1px solid rgba(255,255,255,0.12); }
+    .poster-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    #posterCanvas { width: 100%; max-height: 70vh; background: #000; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); box-shadow: var(--shadow); }
   </style>
 </head>
 <body>
@@ -179,6 +186,36 @@
   </section>
 
   <main class="container">
+    <section id="summarizer" class="panel" aria-labelledby="summarizer-title">
+      <h2 id="summarizer-title">Article Summarizer</h2>
+      <div class="body">
+        <div class="summ-controls">
+          <textarea id="articleInput" placeholder="ここに記事本文または要約したいテキストを貼り付けてください。URL貼り付けはCORSの都合で本文抽出はできないため、本文を貼ってください。"></textarea>
+          <div class="summ-row">
+            <label>長さ
+              <select id="lengthSel">
+                <option value="short">Short</option>
+                <option value="medium" selected>Medium</option>
+                <option value="long">Long</option>
+              </select>
+            </label>
+            <label>アスペクト比
+              <select id="aspectSel">
+                <option value="16:9" selected>16:9</option>
+                <option value="1:1">1:1</option>
+                <option value="9:16">9:16</option>
+              </select>
+            </label>
+            <button class="btn accent" id="summarizeBtn">Summarize</button>
+            <button class="btn" id="exportBtn" disabled>Export PNG</button>
+          </div>
+          <small class="meta" style="color:var(--muted)">貼り付け後に「Summarize」を押すと要約ポスターを生成します。生成後「Export PNG」で一枚絵を保存できます。</small>
+        </div>
+        <div style="margin-top:12px">
+          <canvas id="posterCanvas" role="img" aria-label="Summary poster preview"></canvas>
+        </div>
+      </div>
+    </section>
     <section id="bracket" class="panel" aria-labelledby="bracket-title">
       <h2 id="bracket-title">Interactive Bracket</h2>
       <div class="body">
@@ -620,7 +657,252 @@
     renderBracket();
     renderSchedule();
     renderTeams();
+
+    // =====================
+    // ARTICLE SUMMARIZER
+    // =====================
+    (function summarizer(){
+      const input = document.getElementById('articleInput');
+      const lenSel = document.getElementById('lengthSel');
+      const aspSel = document.getElementById('aspectSel');
+      const btn = document.getElementById('summarizeBtn');
+      const exportBtn = document.getElementById('exportBtn');
+      const canvas = document.getElementById('posterCanvas');
+      const ctx = canvas.getContext('2d');
+
+      function isJapanese(text){ return /[\u3040-\u30ff\u4e00-\u9faf]/.test(text); }
+
+      const stopEN = new Set('a,an,the,and,or,of,to,in,on,for,with,as,by,at,from,this,that,these,those,be,is,are,was,were,been,being,have,has,had,do,does,did,not,can,could,should,would,will,just,about,into,over,after,before,than,then,so,such,if,when,while,also,more,most,other,any,each,which,who,whom,whose,what,where,why,how,all,per,via,between,within,without,across,through,up,down,out,new'.split(','));
+      const stopJA = new Set('これ,それ,あれ,この,その,あの,ここ,そこ,あそこ,もの,こと,ため,よう,など,です,ます,する,した,して,いる,ある,なる,ない,また,そして,しかし,ので,から,まで,など,にて,より,へ,が,を,に,の,と,や,も,へと,では,には,だけ,くらい,まで,ほど,として,としては'.split(','));
+
+      function tokenize(text){
+        // crude multilingual tokenization
+        const ja = isJapanese(text);
+        if(ja){
+          return text.replace(/[\s\t\r\n]+/g,'')
+            .split('')
+            .filter(ch=>/[\u3040-\u30ff\u4e00-\u9fafA-Za-z0-9]/.test(ch))
+            .map(ch=>ch.toLowerCase());
+        } else {
+          return text.toLowerCase()
+            .replace(/[^a-z0-9\s\-']/g,' ')
+            .split(/\s+/)
+            .filter(Boolean);
+        }
+      }
+
+      function splitSentences(text){
+        const ja = isJapanese(text);
+        if(ja){
+          return text
+            .replace(/[\r\n]+/g, '')
+            .split(/(?<=[。！？])/)
+            .map(s=>s.trim()).filter(Boolean);
+        } else {
+          return text
+            .replace(/[\r\n]+/g, ' ')
+            .split(/(?<=[\.\!\?])\s+/)
+            .map(s=>s.trim()).filter(Boolean);
+        }
+      }
+
+      function keywordScores(text){
+        const ja = isJapanese(text);
+        const tokens = tokenize(text);
+        const stop = ja ? stopJA : stopEN;
+        const freq = new Map();
+        for(const t of tokens){ if(stop.has(t)) continue; if(t.length<=1 && !ja) continue; freq.set(t, (freq.get(t)||0)+1); }
+        // normalize
+        let max = 1; for(const v of freq.values()) max = Math.max(max, v);
+        for(const [k,v] of freq) freq.set(k, v/max);
+        return freq;
+      }
+
+      function scoreSentences(sentences, freq){
+        return sentences.map((s,i)=>{
+          const toks = tokenize(s); let sc = 0; for(const t of toks){ sc += (freq.get(t)||0); }
+          // bonus for title-like length
+          if(s.length < 80) sc *= 1.05;
+          return { i, s, sc };
+        });
+      }
+
+      function pickTop(arr, n){ return arr.sort((a,b)=> b.sc - a.sc).slice(0, n); }
+
+      function summarize(text, length){
+        const clean = text.trim().slice(0, 20000);
+        const lines = clean.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+        let title = '';
+        if(lines.length && lines[0].length <= 120) title = lines[0];
+        const body = title ? lines.slice(1).join('\n') : clean;
+        const sentences = splitSentences(body);
+        const freq = keywordScores(body);
+        const scale = length==='short' ? 2 : length==='long' ? 6 : 4;
+        const top = pickTop(scoreSentences(sentences, freq), Math.min(scale, sentences.length));
+        const tldr = top.slice(0, Math.max(1, Math.min(2, top.length))).map(x=>x.s).join(' ');
+        const bullets = top.slice(1, Math.min(1+4, top.length)).map(x=>truncateSentence(x.s));
+        const keywords = Array.from(freq.entries()).sort((a,b)=>b[1]-a[1]).slice(0, 6).map(([k])=>k);
+        if(!title){
+          // infer title from top sentence or first line
+          title = (top[0]?.s || lines[0] || 'Summary').replace(/[。！？.!?]\s*$/,'');
+          title = truncate(title, 80);
+        }
+        return { title, tldr, bullets, keywords };
+      }
+
+      function truncateSentence(s){
+        // prefer first clause
+        const idx = s.search(/[、,;:\-\–\—]/);
+        if(idx>40 && idx<140) return s.slice(0, idx+1);
+        return truncate(s, 160);
+      }
+      function truncate(s, n){ return s.length>n ? s.slice(0,n-1) + '…' : s; }
+
+      function setCanvasAspect(aspect){
+        const dpr = window.devicePixelRatio || 1;
+        let w=1600, h=900;
+        if(aspect==='1:1'){ w=1200; h=1200; }
+        if(aspect==='9:16'){ w=1080; h=1920; }
+        canvas.width = w * dpr; canvas.height = h * dpr; canvas.style.aspectRatio = `${w}/${h}`;
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        return {w, h};
+      }
+
+      function drawPoster(data){
+        const {w,h} = setCanvasAspect(aspSel.value);
+        // background
+        const g1 = ctx.createLinearGradient(0,0,w,h);
+        g1.addColorStop(0, 'rgba(40,240,255,0.12)');
+        g1.addColorStop(1, 'rgba(255,43,214,0.12)');
+        ctx.fillStyle = '#070210'; ctx.fillRect(0,0,w,h);
+        ctx.fillStyle = g1; ctx.fillRect(0,0,w,h);
+        // header bar
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(0,0,w,64);
+        ctx.fillStyle = '#e8e6ff';
+        ctx.font = '700 22px system-ui, -apple-system, Segoe UI, Roboto';
+        ctx.fillText('NEON LEAGUE • AUTO SUMMARY', 24, 42);
+
+        // title
+        let y = 110;
+        ctx.fillStyle = '#e8e6ff';
+        wrapText(data.title, 36, 24, y, w-48, 48); y += 10;
+
+        // tldr block
+        y += 12;
+        const blockTop = y; const blockPad = 16;
+        const blockW = w - 48; const blockX = 24;
+        // panel background
+        ctx.fillStyle = 'rgba(20,10,44,0.9)';
+        const tldrHeight = measureWrap(data.tldr, 18, blockW - blockPad*2, 28).h + blockPad*2;
+        roundRect(ctx, blockX, blockTop, blockW, tldrHeight, 12);
+        ctx.fillStyle = '#bcb7ff';
+        wrapText(data.tldr, 18, blockX + blockPad, blockTop + blockPad + 18, blockW - blockPad*2, 28);
+        y = blockTop + tldrHeight + 18;
+
+        // bullets
+        ctx.fillStyle = '#e8e6ff';
+        ctx.font = '600 20px system-ui, -apple-system, Segoe UI, Roboto';
+        ctx.fillText('Key Points', 24, y); y += 14;
+        y += 12;
+        for(const b of data.bullets){
+          const bullet = '• ' + b;
+          const m = measureWrap(bullet, 18, w-72, 28);
+          drawBulletParagraph(bullet, 18, 24, y, w-72, 28);
+          y += m.h + 8;
+        }
+
+        // keywords chips
+        y += 6; ctx.fillStyle = '#bcb7ff'; ctx.font = '500 16px system-ui, -apple-system, Segoe UI, Roboto';
+        let x=24; const chipPadX=10, chipPadY=6, chipGap=8;
+        for(const kw of data.keywords){
+          const text = String(kw);
+          const tw = ctx.measureText(text).width;
+          const cw = tw + chipPadX*2; const ch = 28;
+          if(x + cw > w-24){ y += ch + chipGap; x = 24; }
+          ctx.fillStyle = 'rgba(255,255,255,0.08)'; roundRect(ctx, x, y, cw, ch, 8);
+          ctx.fillStyle = '#bcb7ff'; ctx.fillText(text, x + chipPadX, y + ch - chipPadY - 2);
+          x += cw + chipGap;
+        }
+
+        // footer note
+        ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '400 12px system-ui, -apple-system, Segoe UI, Roboto';
+        ctx.fillText('Generated locally • Draft summary • Review before sharing', 24, h-18);
+      }
+
+      function roundRect(ctx, x, y, w, h, r){
+        ctx.beginPath();
+        ctx.moveTo(x+r, y);
+        ctx.arcTo(x+w, y, x+w, y+h, r);
+        ctx.arcTo(x+w, y+h, x, y+h, r);
+        ctx.arcTo(x, y+h, x, y, r);
+        ctx.arcTo(x, y, x+w, y, r);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function measureWrap(text, fontSize, maxWidth, lineHeight){
+        ctx.save(); ctx.font = `400 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto`;
+        let x=0, y=lineHeight; const words = text.split(/\s+/);
+        let line=''; let lines=0;
+        for(const w of words){
+          const test = line ? line + ' ' + w : w;
+          const width = ctx.measureText(test).width;
+          if(width > maxWidth && line){ lines++; line = w; }
+          else { line = test; }
+        }
+        if(line) lines++;
+        ctx.restore();
+        return { h: lines*lineHeight };
+      }
+
+      function wrapText(text, fontSize, x, y, maxWidth, lineHeight){
+        ctx.save(); ctx.font = `800 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto`;
+        const words = text.split(/\s+/); let line=''; let yy=y;
+        for(const w of words){
+          const test = line ? line + ' ' + w : w;
+          const width = ctx.measureText(test).width;
+          if(width > maxWidth && line){ ctx.fillText(line, x, yy); line = w; yy += lineHeight; }
+          else { line = test; }
+        }
+        if(line) ctx.fillText(line, x, yy);
+        ctx.restore();
+      }
+
+      function drawBulletParagraph(text, fontSize, x, y, maxWidth, lineHeight){
+        ctx.save(); ctx.font = `400 ${fontSize}px system-ui, -apple-system, Segoe UI, Roboto`;
+        const words = text.split(/\s+/); let line=''; let yy=y;
+        for(const w of words){
+          const test = line ? line + ' ' + w : w;
+          const width = ctx.measureText(test).width;
+          if(width > maxWidth && line){ ctx.fillText(line, x, yy); line = w; yy += lineHeight; }
+          else { line = test; }
+        }
+        if(line) ctx.fillText(line, x, yy);
+        ctx.restore();
+      }
+
+      function doSummarize(){
+        const txt = input.value.trim(); if(!txt){ exportBtn.disabled = true; return; }
+        const len = lenSel.value;
+        const data = summarize(txt, len);
+        drawPoster(data);
+        exportBtn.disabled = false;
+        exportBtn.onclick = ()=>{
+          const name = (data.title || 'summary').replace(/[^\w\-]+/g,'_').slice(0,60);
+          canvas.toBlob(b=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download = name + '.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000); });
+        };
+      }
+
+      btn.addEventListener('click', doSummarize);
+      input.addEventListener('paste', ()=>{
+        setTimeout(()=>{ if(input.value.trim().length>60) doSummarize(); }, 0);
+      });
+      // initialize canvas size
+      setCanvasAspect(aspSel.value);
+      window.addEventListener('resize', ()=>setCanvasAspect(aspSel.value));
+      aspSel.addEventListener('change', ()=>{ setCanvasAspect(aspSel.value); if(!exportBtn.disabled) doSummarize(); });
+    })();
   </script>
 </body>
 </html>
-
